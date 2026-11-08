@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "MyPDF View",
+    "slug": "mypdfview",
+    "scheme": "mypdfview",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F8F8FF",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mypdfview.app"
+    },
+    "android": {
+      "package": "com.mypdfview.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#F8F8FF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/pdf"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/pdf"
+            }
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      [
+        "expo-sharing",
+        {
+          "android": {
+            "enabled": true,
+            "singleShareMimeTypes": [
+              "application/pdf"
+            ]
+          }
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow MyPDF View to save exported pages to your gallery.",
+          "savePhotosPermission": "Allow MyPDF View to save exported pages to your gallery.",
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ],
+      "./plugins/withCustomNinja"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
