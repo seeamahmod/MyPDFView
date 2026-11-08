@@ -83,13 +83,25 @@ export function BottomNavBar({ active, onChange }: { active: NavKey; onChange: (
       {NAV.map((n) => {
         const on = n.key === active;
         return (
-          <Pressable key={n.key} style={styles.navItem} onPress={() => onChange(n.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}>
-            <View style={[styles.navPill, on && { backgroundColor: c.bgBrand }]}>
-              <Icon name={n.icon} size={24} color={on ? c.iconOnBrand : c.iconTertiary} />
-            </View>
-            <AppText variant="labelMd" color={on ? c.textPrimary : c.textTertiary}>
-              {n.label}
-            </AppText>
+          <Pressable
+            key={n.key}
+            style={styles.navItem}
+            onPress={() => onChange(n.key)}
+            accessibilityRole="tab"
+            accessibilityLabel={n.label}
+            accessibilityState={{ selected: on }}
+          >
+            {({ pressed }) => (
+              <>
+                {/* Press feedback lives on the fully rounded pill, as in the design. */}
+                <View style={[styles.navPill, { backgroundColor: on ? (pressed ? c.bgBrandPressed : c.bgBrand) : pressed ? c.bgSubtlePressed : 'transparent' }]}>
+                  <Icon name={n.icon} size={24} color={on ? c.iconOnBrand : c.iconTertiary} />
+                </View>
+                <AppText variant="labelMd" color={on ? c.textPrimary : c.textTertiary}>
+                  {n.label}
+                </AppText>
+              </>
+            )}
           </Pressable>
         );
       })}
@@ -101,13 +113,24 @@ export function BottomNavBar({ active, onChange }: { active: NavKey; onChange: (
 export function ToolItem({ label, icon, selected, disabled, onPress }: { label: string; icon: IconName; selected?: boolean; disabled?: boolean; onPress?: () => void }) {
   const { c } = useTheme();
   return (
-    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled }} style={styles.toolItem}>
-      <View style={[styles.toolPill, selected && { backgroundColor: c.bgBrand }]}>
-        <Icon name={icon} size={22} color={selected ? c.iconOnBrand : disabled ? c.iconDisabled : c.iconSecondary} />
-      </View>
-      <AppText variant="labelSm" color={selected ? c.textBrand : disabled ? c.textDisabled : c.textSecondary} numberOfLines={1}>
-        {label}
-      </AppText>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected, disabled }}
+      style={styles.toolItem}
+    >
+      {({ pressed }) => (
+        <>
+          <View style={[styles.toolPill, { backgroundColor: selected ? (pressed ? c.bgBrandPressed : c.bgBrand) : pressed ? c.bgSubtlePressed : 'transparent' }]}>
+            <Icon name={icon} size={22} color={selected ? c.iconOnBrand : disabled ? c.iconDisabled : c.iconSecondary} />
+          </View>
+          <AppText variant="labelSm" color={selected ? c.textBrand : disabled ? c.textDisabled : c.textSecondary} numberOfLines={1}>
+            {label}
+          </AppText>
+        </>
+      )}
     </Pressable>
   );
 }
@@ -427,9 +450,9 @@ const styles = StyleSheet.create({
   listItem: { flexDirection: 'row', alignItems: 'center', gap: space[16], minHeight: 56, paddingHorizontal: space[20], paddingVertical: space[8] },
   nav: { flexDirection: 'row', borderTopWidth: 1, paddingHorizontal: 8 },
   navItem: { flex: 1, alignItems: 'center', gap: 4, paddingTop: 8 },
-  navPill: { width: 56, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  navPill: { width: 56, height: 32, borderRadius: radius.full, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   toolItem: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
-  toolPill: { width: 44, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  toolPill: { width: 44, height: 32, borderRadius: radius.full, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   bar: { flexDirection: 'row', alignItems: 'center' },
   actions: { flexDirection: 'row', alignItems: 'center' },
   sheet: { borderTopLeftRadius: radius['2xl'], borderTopRightRadius: radius['2xl'], paddingTop: 4, ...shadows.sheet },
