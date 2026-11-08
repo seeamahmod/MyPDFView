@@ -26,9 +26,9 @@ src/
   components/          Design-system components (Button, Chip, InputField, ListItem, BottomSheet, …)
   pdf/                 pdf.js WebView engine, viewer bridge, pdf-lib annotation flattening, export
   store/library.tsx    Library: imported copies + PDFs found on the phone, thumbnails and metadata
-modules/device-pdfs/   Local Expo native module (Kotlin): All files access, MediaStore PDF scan, file rename/delete/overwrite
   theme/               Design tokens (colors light/dark, spacing, radius, type, shadows)
 scripts/build-pdfjs.mjs  Inlines pdf.js for offline use (runs on npm install)
+modules/device-pdfs/   Local Expo native module (Kotlin): All files access, MediaStore PDF scan, file rename/delete/overwrite
 ```
 
 ## Develop
