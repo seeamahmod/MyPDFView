@@ -4,6 +4,7 @@ A PDF reader and editor for Android, built with React Native (Expo SDK 58) from 
 
 ## Features
 
+- **All PDFs on your phone**: after you allow file access once (Android 11+: “Allow access to manage all files”), every PDF on the device appears in Home automatically — no importing. The list stays in sync (pull to refresh), and rename, delete and Save act on the real files.
 - **Library**: import PDFs (single or multiple), grid/list views, filter by source (Documents, Downloads, WhatsApp, Email), sort by date, name or size, search by name, plus Files / Recent / Starred tabs.
 - **File actions**: open, edit, share, star, rename (with validation), duplicate, file info and delete (with confirmation).
 - **Viewer**: smooth page rendering (pdf.js, fully offline), pinch-zoom and zoom controls, page indicator, search inside the document, bookmarks, go to page, fit to width, night reading, page thumbnails, and resuming on the last page you read.
@@ -24,7 +25,8 @@ src/
     incoming.tsx       Handles "Open with" and shared PDFs
   components/          Design-system components (Button, Chip, InputField, ListItem, BottomSheet, …)
   pdf/                 pdf.js WebView engine, viewer bridge, pdf-lib annotation flattening, export
-  store/library.tsx    On-device library (files, thumbnails and metadata)
+  store/library.tsx    Library: imported copies + PDFs found on the phone, thumbnails and metadata
+modules/device-pdfs/   Local Expo native module (Kotlin): All files access, MediaStore PDF scan, file rename/delete/overwrite
   theme/               Design tokens (colors light/dark, spacing, radius, type, shadows)
 scripts/build-pdfjs.mjs  Inlines pdf.js for offline use (runs on npm install)
 ```
@@ -46,6 +48,8 @@ cd android
 ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
 ```
 
+On Windows, the Android SDK's bundled ninja 1.10 can fail with “Filename longer than 260 characters”. Download ninja 1.12+ and pass it in: `-PninjaPath=C:/path/to/ninja.exe` (or set `NINJA_PATH`).
+
 The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. Copy it to your phone and open it to install (allow "Install unknown apps" for your file manager).
 
 > The release build is signed with the default debug keystore, which is fine for personal installs. Create your own upload key before publishing to Google Play.
@@ -55,6 +59,8 @@ The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. C
 Replace the files in `assets/` (`icon.png`, `android-icon-foreground.png`, `android-icon-background.png`, `android-icon-monochrome.png`), then run `npx expo prebuild --platform android --clean` and rebuild.
 
 ## Notes
+
+- Seeing every PDF on the phone needs the **All files access** permission. That's fine for personal installs; Google Play only allows it for certain app types, so a Play release may need a different approach.
 
 - **Edit** works by covering the original line and drawing the new text on top (true in-place PDF text editing isn't possible in general). Text saved into PDFs uses Helvetica, so characters outside Latin-1 are replaced with `?`.
 - **Word export** is shown as "Coming soon".

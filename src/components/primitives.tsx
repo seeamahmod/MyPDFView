@@ -63,7 +63,7 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         {
-          height: size === 'large' ? 48 : 36,
+          height: size === 'large' ? 48 : 32,
           paddingHorizontal: size === 'large' ? space[20] : space[16],
           backgroundColor: disabled ? (kind === 'ghost' ? 'transparent' : c.bgDisabled) : pressed ? map.bgP : map.bg,
           borderColor: 'border' in map ? (disabled ? c.borderSubtle : map.border) : 'transparent',
@@ -200,9 +200,11 @@ export function Toggle({ value, onChange, disabled }: { value: boolean; onChange
         styles.toggle,
         {
           backgroundColor: value ? c.bgBrand : c.bgSubtlePressed,
-          borderColor: value ? c.bgBrand : c.borderStrong,
+          borderColor: c.borderStrong,
+          borderWidth: value ? 0 : 2,
           justifyContent: value ? 'flex-end' : 'flex-start',
           paddingLeft: value ? 4 : 6,
+          paddingRight: value ? 4 : 2,
           opacity: disabled ? 0.38 : 1,
         },
       ]}
@@ -454,7 +456,7 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 const styles = StyleSheet.create({
   button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[8], borderRadius: radius.full },
   iconButton: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.full },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: space[6], height: 36, paddingHorizontal: space[12], borderRadius: radius.full, borderWidth: 1 },
-  toggle: { width: 52, height: 32, borderRadius: 16, borderWidth: 2, flexDirection: 'row', alignItems: 'center', paddingRight: 2 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: space[6], height: 32, paddingHorizontal: space[12], borderRadius: radius.full, borderWidth: 1 },
+  toggle: { width: 52, height: 32, borderRadius: 16, flexDirection: 'row', alignItems: 'center' },
   field: { flexDirection: 'row', alignItems: 'center', gap: space[8], minHeight: 56, paddingHorizontal: space[16], paddingVertical: space[8], borderRadius: radius.md },
 });

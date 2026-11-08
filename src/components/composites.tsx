@@ -79,7 +79,7 @@ export function BottomNavBar({ active, onChange }: { active: NavKey; onChange: (
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.nav, { backgroundColor: c.bgSurface, borderTopColor: c.borderSubtle, paddingBottom: Math.max(insets.bottom, 12) }]}>
+    <View style={[styles.nav, { backgroundColor: c.bgSurface, borderTopColor: c.borderSubtle, paddingBottom: insets.bottom + 16 }]}>
       {NAV.map((n) => {
         const on = n.key === active;
         return (
@@ -153,7 +153,7 @@ export function TopAppBar({
   const insets = useSafeAreaInsets();
   if (type === 'home')
     return (
-      <View style={[styles.bar, { paddingTop: insets.top + 16, paddingLeft: 20, paddingRight: 8, backgroundColor: c.bgCanvas }]}>
+      <View style={[styles.bar, { paddingTop: insets.top + 16, paddingBottom: 8, paddingLeft: 20, paddingRight: 8, backgroundColor: c.bgCanvas }]}>
         <View style={{ flex: 1, gap: 2 }}>
           {!!eyebrow && (
             <AppText variant="bodySm" color={c.textTertiary}>
@@ -169,7 +169,7 @@ export function TopAppBar({
     <View
       style={[
         styles.bar,
-        { paddingTop: insets.top + 8, paddingBottom: 8, paddingHorizontal: 4, backgroundColor: c.bgSurface, borderBottomWidth: 1, borderBottomColor: c.borderSubtle, gap: 4 },
+        { paddingTop: insets.top + 8, paddingBottom: 8, paddingLeft: 4, paddingRight: 8, minHeight: insets.top + 64, backgroundColor: c.bgSurface, borderBottomWidth: 1, borderBottomColor: c.borderSubtle, gap: 4 },
       ]}
     >
       <IconButton icon={type === 'viewer' ? 'arrow-left' : 'close'} onPress={onBack} label={type === 'viewer' ? 'Back' : 'Close editor'} />
@@ -229,13 +229,13 @@ export function BottomSheet({
         <Animated.View
           style={[
             styles.sheet,
-            { backgroundColor: c.bgSurfaceRaised, shadowColor: c.shadow, paddingBottom: Math.max(insets.bottom, 16) + 8, maxHeight: height - insets.top - 48, transform: [{ translateY: y }] },
+            { backgroundColor: c.bgSurfaceRaised, shadowColor: c.shadow, paddingBottom: insets.bottom + 24, maxHeight: height - insets.top - 48, transform: [{ translateY: y }] },
           ]}
         >
           <DragHandle />
           {!!title && <SheetHeader title={title} subtitle={subtitle} onClose={onClose} />}
           {scroll ? (
-            <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingVertical: 8 }} keyboardShouldPersistTaps="handled">
+            <ScrollView style={{ flexGrow: 0, maxHeight: 600 }} contentContainerStyle={{ paddingVertical: 8 }} keyboardShouldPersistTaps="handled">
               {children}
             </ScrollView>
           ) : (
@@ -251,7 +251,7 @@ export function BottomSheet({
 export function SheetHeader({ title, subtitle, onClose }: { title: string; subtitle?: string; onClose?: () => void }) {
   const { c } = useTheme();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 56, paddingLeft: 20, paddingRight: 8, gap: 8 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 56, paddingLeft: 20, paddingRight: 8, paddingVertical: 4, gap: 8 }}>
       <View style={{ flex: 1, gap: 2 }}>
         <AppText variant="h3" numberOfLines={1}>
           {title}
@@ -449,7 +449,7 @@ export function FormatOption({
 const styles = StyleSheet.create({
   listItem: { flexDirection: 'row', alignItems: 'center', gap: space[16], minHeight: 56, paddingHorizontal: space[20], paddingVertical: space[8] },
   nav: { flexDirection: 'row', borderTopWidth: 1, paddingHorizontal: 8 },
-  navItem: { flex: 1, alignItems: 'center', gap: 4, paddingTop: 8 },
+  navItem: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 8 },
   navPill: { width: 56, height: 32, borderRadius: radius.full, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   toolItem: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
   toolPill: { width: 44, height: 32, borderRadius: radius.full, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

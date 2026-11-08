@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml:2:13-83
+INJECTED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml:2:13-83
+	package
+		INJECTED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml
+	xmlns:android
+		ADDED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml:2:23-81
+uses-sdk
+INJECTED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml reason: use-sdk injection requested
+INJECTED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml
+INJECTED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml
+	android:targetSdkVersion
+		INJECTED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml
+	android:minSdkVersion
+		INJECTED from F:\MyPDFView\modules\device-pdfs\android\build\intermediates\tmp\ProcessLibraryManifest\release\tempAndroidManifest7462152844771592749.xml

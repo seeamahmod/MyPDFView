@@ -11,7 +11,7 @@ import type { Annotation } from '../../pdf/annotations';
 import { exportDoc, type ExportFormat } from '../../pdf/exportDoc';
 import { usePdfEngine } from '../../pdf/PdfEngine';
 import { PdfView, type PdfViewHandle, type PdfViewMessage } from '../../pdf/PdfView';
-import { fileFor, formatSize, useLibrary } from '../../store/library';
+import { formatSize, useLibrary } from '../../store/library';
 import { useTheme } from '../../theme/ThemeProvider';
 import { annotation, radius, shadows, type as T } from '../../theme/tokens';
 
@@ -236,7 +236,7 @@ export default function Viewer() {
           onBack={() => (mode === 'highlight' ? setMode('viewer') : router.canGoBack() ? router.back() : router.replace('/'))}
           actions={
             mode === 'highlight' ? (
-              <Button size="small" label="Done" onPress={() => setMode('viewer')} style={{ marginRight: 8 }} />
+              <Button size="small" label="Done" onPress={() => setMode('viewer')} />
             ) : (
               <>
                 <IconButton icon="search" onPress={() => setSearchOpen(true)} label="Search" />
@@ -264,7 +264,7 @@ export default function Viewer() {
       </View>
 
       {/* Viewer Bottom Bar */}
-      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingBottom: insets.bottom + 16, gap: 12, alignItems: 'center' }}>
+      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 12, alignItems: 'center' }}>
         <View pointerEvents="box-none" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', alignSelf: 'stretch' }}>
           <PageIndicator label={`${page} / ${doc.pages}`} />
           <ZoomControl value={zoom} onIn={() => pdf.current?.zoom(1)} onOut={() => pdf.current?.zoom(-1)} />
@@ -285,10 +285,10 @@ export default function Viewer() {
                 ['Edit', 'edit', () => router.push(`/editor/${doc.id}`)],
                 ['Highlight', 'highlighter', () => setMode('highlight')],
                 ['Export', 'export', () => setSheet('export')],
-                ['Share', 'share', () => Sharing.shareAsync(fileFor(doc.id).uri, { mimeType: 'application/pdf', dialogTitle: doc.name })],
+                ['Share', 'share', () => Sharing.shareAsync(lib.shareUri(doc.id), { mimeType: 'application/pdf', dialogTitle: doc.name })],
               ] as const
             ).map(([l, i, f]) => (
-              <View key={l} style={{ width: 60 }}>
+              <View key={l} style={{ width: 56 }}>
                 <ToolItem label={l} icon={i} onPress={f} />
               </View>
             ))}
@@ -363,9 +363,9 @@ export default function Viewer() {
 
       {/* Pages */}
       <BottomSheet visible={sheet === 'pages'} onClose={() => setSheet(null)} title="Pages" subtitle={`${doc.pages} pages`}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, paddingHorizontal: 20, justifyContent: 'flex-start' }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 13, rowGap: 16, paddingHorizontal: 20, justifyContent: 'flex-start' }}>
           {Array.from({ length: Math.min(doc.pages, 120) }, (_, i) => i + 1).map((p) => (
-            <PageThumbnail key={p} page={p} uri={thumbs[p]} current={p === page} onPress={() => goTo(p)} width={100} />
+            <PageThumbnail key={p} page={p} uri={thumbs[p]} current={p === page} onPress={() => goTo(p)} width={112} />
           ))}
         </View>
       </BottomSheet>

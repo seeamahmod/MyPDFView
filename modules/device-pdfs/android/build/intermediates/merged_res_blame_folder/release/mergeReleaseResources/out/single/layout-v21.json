@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "expo.modules.devicepdfs.device-pdfs-release-27:/layout-v21/notification_template_custom_big.xml",
+        "source": "expo.modules.devicepdfs.device-pdfs-core-1.13.1-4:/layout-v21/notification_template_custom_big.xml"
+    },
+    {
+        "merged": "expo.modules.devicepdfs.device-pdfs-release-27:/layout-v21/notification_template_icon_group.xml",
+        "source": "expo.modules.devicepdfs.device-pdfs-core-1.13.1-4:/layout-v21/notification_template_icon_group.xml"
+    },
+    {
+        "merged": "expo.modules.devicepdfs.device-pdfs-release-27:/layout-v21/notification_action.xml",
+        "source": "expo.modules.devicepdfs.device-pdfs-core-1.13.1-4:/layout-v21/notification_action.xml"
+    },
+    {
+        "merged": "expo.modules.devicepdfs.device-pdfs-release-27:/layout-v21/notification_action_tombstone.xml",
+        "source": "expo.modules.devicepdfs.device-pdfs-core-1.13.1-4:/layout-v21/notification_action_tombstone.xml"
+    }
+]

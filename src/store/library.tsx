@@ -1,7 +1,17 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AppState } from 'react-native';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Legacy from 'expo-file-system/legacy';
 import { fromByteArray } from 'base64-js';
+import {
+  deleteDeviceFile,
+  devicePdfsAvailable,
+  hasDeviceAccess,
+  overwriteDeviceFile,
+  renameDeviceFile,
+  requestDeviceAccess,
+  scanDevicePdfs,
+} from '../../modules/device-pdfs';
 import type { Annotation } from '../pdf/annotations';
 import { usePdfEngine } from '../pdf/PdfEngine';
 
@@ -12,7 +22,7 @@ export type PdfDoc = {
   id: string;
   name: string; // without .pdf
   size: number;
-  pages: number;
+  pages: number; // 0 = not analyzed yet
   source: Source;
   starred: boolean;
   addedAt: number;
@@ -22,6 +32,8 @@ export type PdfDoc = {
   bookmarks: number[];
   highlights: Annotation[];
   thumb?: string;
+  /** Set for PDFs that live on the phone (found by the device scan) instead of in app storage. */
+  external?: { uri: string; path: string; mediaId: string };
 };
 
 const pdfDir = new Directory(Paths.document, 'pdfs');
@@ -29,6 +41,16 @@ const thumbDir = new Directory(Paths.document, 'thumbs');
 const dbFile = new File(Paths.document, 'library.json');
 
 export const fileFor = (id: string) => new File(pdfDir, `${id}.pdf`);
+const pathUri = (path: string) => 'file://' + path.split('/').map(encodeURIComponent).join('/');
+/** The file holding a document's bytes — app storage, or the original file on the phone. */
+export function srcFile(d: PdfDoc): File {
+  if (!d.external) return fileFor(d.id);
+  try {
+    const f = new File(d.external.uri);
+    if (f.exists) return f;
+  } catch {}
+  return new File(pathUri(d.external.path));
+}
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 export const bytesToBase64 = (b: Uint8Array) => fromByteArray(b);
 export const stripPdf = (n: string) => n.replace(/\.pdf$/i, '').trim() || 'Untitled';
@@ -48,7 +70,7 @@ function loadLibrary(): PdfDoc[] {
   try {
     if (!dbFile.exists) return [];
     const list = JSON.parse(dbFile.textSync()) as PdfDoc[];
-    return list.filter((d) => fileFor(d.id).exists);
+    return list.filter((d) => d.external || fileFor(d.id).exists);
   } catch {
     return []; // corrupted db → start fresh; files remain on disk
   }
@@ -57,14 +79,23 @@ function loadLibrary(): PdfDoc[] {
 type Library = {
   docs: PdfDoc[];
   loaded: boolean;
+  /** True when the app can see all PDFs on the phone. */
+  deviceAccess: boolean;
+  deviceSupported: boolean;
+  scanning: boolean;
+  requestDeviceAccess: () => Promise<void>;
+  syncDevice: () => Promise<void>;
   importPdf: (uri: string, nameHint?: string, opts?: { source?: Source }) => Promise<PdfDoc>;
-  rename: (id: string, name: string) => void;
+  rename: (id: string, name: string) => Promise<void>;
   duplicate: (id: string) => Promise<PdfDoc>;
-  remove: (id: string) => void;
+  remove: (id: string) => Promise<void>;
   update: (id: string, patch: Partial<PdfDoc>) => void;
   replaceContent: (id: string, bytes: Uint8Array) => Promise<void>;
   addFromBytes: (bytes: Uint8Array, name: string, source: Source) => Promise<PdfDoc>;
   base64Of: (id: string) => Promise<string>;
+  bytesOf: (id: string) => Promise<Uint8Array>;
+  /** A local file URI that can be handed to the Android share sheet. */
+  shareUri: (id: string) => string;
   get: (id: string) => PdfDoc | undefined;
 };
 
@@ -73,8 +104,12 @@ const Ctx = createContext<Library | null>(null);
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const engine = usePdfEngine();
   const [docs, setDocs] = useState<PdfDoc[]>(loadLibrary);
+  const [deviceAccess, setDeviceAccess] = useState<boolean>(hasDeviceAccess);
+  const [scanning, setScanning] = useState(false);
   const loaded = true;
   const docsRef = useRef<PdfDoc[]>(docs);
+  const queueBusy = useRef(false);
+  const failed = useRef(new Set<string>());
 
   const commit = useCallback((next: PdfDoc[]) => {
     docsRef.current = next;
@@ -91,17 +126,17 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   /** Reads page count and renders a page-1 thumbnail. */
   const analyze = useCallback(
-    async (id: string) => {
-      const b64 = await fileFor(id).base64();
-      const info = await engine.load(id, b64);
+    async (d: PdfDoc) => {
+      const key = `analyze-${d.id}`;
+      const info = await engine.load(key, await srcFile(d).base64());
       let thumb: string | undefined;
       try {
-        const url = await engine.renderPage(id, 1, 360, 'image/jpeg', 0.8);
-        const t = new File(thumbDir, `${id}-${Date.now()}.jpg`);
+        const url = await engine.renderPage(key, 1, 360, 'image/jpeg', 0.8);
+        const t = new File(thumbDir, `${d.id}-${Date.now()}.jpg`);
         t.writeSync(url.split(',')[1], { encoding: 'base64' });
         thumb = t.uri;
       } catch {}
-      engine.unload(id).catch(() => {});
+      engine.unload(key).catch(() => {});
       return { pages: info.pages, thumb };
     },
     [engine],
@@ -114,14 +149,101 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
+  // Background queue: fill in page counts + thumbnails for device PDFs, one at a time.
+  const pump = useCallback(async () => {
+    if (queueBusy.current) return;
+    queueBusy.current = true;
+    try {
+      for (;;) {
+        const next = docsRef.current.find((d) => (!d.pages || !d.thumb) && !failed.current.has(d.id));
+        if (!next) break;
+        try {
+          const { pages, thumb } = await analyze(next);
+          if (docsRef.current.some((d) => d.id === next.id)) patch(next.id, { pages, thumb });
+        } catch {
+          failed.current.add(next.id); // unreadable or password-protected; leave the placeholder
+        }
+      }
+    } finally {
+      queueBusy.current = false;
+    }
+  }, [analyze, patch]);
+
+  const syncDevice = useCallback(async () => {
+    const access = hasDeviceAccess();
+    setDeviceAccess(access);
+    if (!access) return;
+    setScanning(true);
+    try {
+      const found = await scanDevicePdfs();
+      const current = docsRef.current;
+      const byMedia = new Map(current.filter((d) => d.external).map((d) => [d.external!.mediaId, d]));
+      const byPath = new Map(current.filter((d) => d.external).map((d) => [d.external!.path, d]));
+      const seen = new Set<string>();
+      const next: PdfDoc[] = [];
+      for (const f of found) {
+        const prev = byMedia.get(f.id) ?? byPath.get(f.path);
+        const ext = { uri: f.uri, path: f.path, mediaId: f.id };
+        if (prev) {
+          seen.add(prev.id);
+          const changed = prev.size !== f.size || Math.abs(prev.modifiedAt - f.modified) > 1000;
+          if (changed) dropThumb(prev);
+          next.push({ ...prev, name: stripPdf(f.name), size: f.size, modifiedAt: f.modified, external: ext, ...(changed ? { pages: 0, thumb: undefined } : null) });
+        } else {
+          next.push({
+            id: `d${f.id}`,
+            name: stripPdf(f.name),
+            size: f.size,
+            pages: 0,
+            source: detectSource(f.path, f.name),
+            starred: false,
+            addedAt: f.modified,
+            modifiedAt: f.modified,
+            bookmarks: [],
+            highlights: [],
+            external: ext,
+          });
+        }
+      }
+      // Keep imported (app-storage) PDFs; drop device PDFs that no longer exist on the phone.
+      const locals = current.filter((d) => !d.external);
+      for (const d of current) if (d.external && !seen.has(d.id)) dropThumb(d);
+      commit([...locals, ...next]);
+    } finally {
+      setScanning(false);
+    }
+    pump();
+  }, [commit, pump]);
+
+  // Sync on launch and whenever the app comes back to the foreground (e.g. from Settings).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      syncDevice();
+      pump();
+    }, 0);
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') syncDevice();
+    });
+    return () => {
+      clearTimeout(t);
+      sub.remove();
+    };
+  }, [syncDevice, pump]);
+
+  const requestAccess = useCallback(async () => {
+    const granted = await requestDeviceAccess();
+    if (granted) await syncDevice();
+  }, [syncDevice]);
+
   const addFromBytes = useCallback(
     async (bytes: Uint8Array, name: string, source: Source) => {
       const id = newId();
       const f = fileFor(id);
       f.writeSync(bytes);
-      const { pages, thumb } = await analyze(id);
       const now = Date.now();
-      const doc: PdfDoc = { id, name: stripPdf(name), size: f.size, pages, source, starred: false, addedAt: now, modifiedAt: now, bookmarks: [], highlights: [], thumb };
+      const base: PdfDoc = { id, name: stripPdf(name), size: f.size, pages: 0, source, starred: false, addedAt: now, modifiedAt: now, bookmarks: [], highlights: [] };
+      const { pages, thumb } = await analyze(base);
+      const doc = { ...base, pages, thumb };
       commit([doc, ...docsRef.current]);
       return doc;
     },
@@ -141,7 +263,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       } catch {}
       if (!name) name = nameHint || 'Document.pdf';
 
-      // Opening the same file again reuses the copy already in the library.
+      // Opening a file that's already in the library (imported or on the phone) reuses it.
       const existing = docsRef.current.find(
         (d) => d.name.toLowerCase() === stripPdf(name).toLowerCase() && srcSize > 0 && d.size === srcSize,
       );
@@ -154,28 +276,27 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       } catch {
         await Legacy.copyAsync({ from: uri, to: dest.uri });
       }
-      let pages = 0;
-      let thumb: string | undefined;
-      try {
-        ({ pages, thumb } = await analyze(id));
-      } catch {
-        dest.delete();
-        throw new Error('This file could not be opened as a PDF.');
-      }
       const now = Date.now();
-      const doc: PdfDoc = {
+      const base: PdfDoc = {
         id,
         name: stripPdf(name),
         size: dest.size,
-        pages,
+        pages: 0,
         source: opts?.source ?? detectSource(uri, name),
         starred: false,
         addedAt: now,
         modifiedAt: now,
         bookmarks: [],
         highlights: [],
-        thumb,
       };
+      let info: { pages: number; thumb?: string };
+      try {
+        info = await analyze(base);
+      } catch {
+        dest.delete();
+        throw new Error('This file could not be opened as a PDF.');
+      }
+      const doc = { ...base, ...info };
       commit([doc, ...docsRef.current]);
       return doc;
     },
@@ -186,7 +307,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     async (id: string) => {
       const src = docsRef.current.find((d) => d.id === id)!;
       const nid = newId();
-      fileFor(id).copySync(fileFor(nid));
+      srcFile(src).copySync(fileFor(nid)); // copies always live in app storage
       let thumb: string | undefined;
       if (src.thumb) {
         const t = new File(thumbDir, `${nid}-${Date.now()}.jpg`);
@@ -196,7 +317,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         } catch {}
       }
       const now = Date.now();
-      const doc: PdfDoc = { ...src, id: nid, name: `${src.name} copy`, addedAt: now, modifiedAt: now, openedAt: undefined, starred: false, thumb };
+      const doc: PdfDoc = { ...src, id: nid, name: `${src.name} copy`, addedAt: now, modifiedAt: now, openedAt: undefined, starred: false, thumb, external: undefined };
       const idx = docsRef.current.findIndex((d) => d.id === id);
       const next = [...docsRef.current];
       next.splice(idx + 1, 0, doc);
@@ -207,44 +328,92 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   );
 
   const remove = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const d = docsRef.current.find((x) => x.id === id);
-      try {
-        fileFor(id).delete();
-      } catch {}
+      if (!d) return;
+      if (d.external) {
+        await deleteDeviceFile(d.external.path); // throws if the phone refuses
+      } else {
+        try {
+          fileFor(id).delete();
+        } catch {}
+      }
       dropThumb(d);
       commit(docsRef.current.filter((x) => x.id !== id));
     },
     [commit],
   );
 
+  const rename = useCallback(
+    async (id: string, name: string) => {
+      const d = docsRef.current.find((x) => x.id === id);
+      if (!d) return;
+      const clean = stripPdf(name);
+      if (d.external) {
+        const newPath = await renameDeviceFile(d.external.path, `${clean}.pdf`);
+        patch(id, { name: clean, external: { ...d.external, path: newPath, uri: pathUri(newPath) } });
+        syncDevice();
+      } else {
+        patch(id, { name: clean, modifiedAt: Date.now() });
+      }
+    },
+    [patch, syncDevice],
+  );
+
   const replaceContent = useCallback(
     async (id: string, bytes: Uint8Array) => {
-      const f = fileFor(id);
-      f.writeSync(bytes);
-      const old = docsRef.current.find((d) => d.id === id);
-      const { pages, thumb } = await analyze(id);
+      const old = docsRef.current.find((d) => d.id === id)!;
+      let size: number;
+      if (old.external) {
+        const tmp = new File(Paths.cache, `save-${id}.pdf`);
+        tmp.writeSync(bytes);
+        size = await overwriteDeviceFile(old.external.path, tmp.uri);
+        tmp.delete();
+      } else {
+        const f = fileFor(id);
+        f.writeSync(bytes);
+        size = f.size;
+      }
+      const { pages, thumb } = await analyze(old);
       dropThumb(old);
-      patch(id, { size: f.size, pages, thumb, modifiedAt: Date.now() });
+      patch(id, { size, pages, thumb, modifiedAt: Date.now() });
     },
     [analyze, patch],
   );
+
+  const shareUri = useCallback((id: string) => {
+    const d = docsRef.current.find((x) => x.id === id)!;
+    if (!d.external) return fileFor(id).uri;
+    const dir = new Directory(Paths.cache, 'share');
+    dir.create({ idempotent: true, intermediates: true });
+    const out = new File(dir, `${d.name.replace(/[\\/:*?"<>|]/g, '_')}.pdf`);
+    if (out.exists) out.delete();
+    srcFile(d).copySync(out);
+    return out.uri;
+  }, []);
 
   const value = useMemo<Library>(
     () => ({
       docs,
       loaded,
+      deviceAccess,
+      deviceSupported: devicePdfsAvailable,
+      scanning,
+      requestDeviceAccess: requestAccess,
+      syncDevice,
       importPdf,
       addFromBytes,
       duplicate,
       remove,
+      rename,
       replaceContent,
+      shareUri,
       update: patch,
-      rename: (id, name) => patch(id, { name: stripPdf(name), modifiedAt: Date.now() }),
-      base64Of: (id) => fileFor(id).base64(),
+      base64Of: (id) => srcFile(docsRef.current.find((d) => d.id === id)!).base64(),
+      bytesOf: (id) => srcFile(docsRef.current.find((d) => d.id === id)!).bytes(),
       get: (id) => docsRef.current.find((d) => d.id === id),
     }),
-    [docs, loaded, importPdf, addFromBytes, duplicate, remove, replaceContent, patch],
+    [docs, loaded, deviceAccess, scanning, requestAccess, syncDevice, importPdf, addFromBytes, duplicate, remove, rename, replaceContent, shareUri, patch],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -271,4 +440,4 @@ export function formatDate(ts: number) {
   if (days < 7) return `${days} days ago`;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
-export const pagesLabel = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
+export const pagesLabel = (n: number) => (n > 0 ? `${n} ${n === 1 ? 'page' : 'pages'}` : 'PDF');

@@ -2,7 +2,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { Album, Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { toByteArray } from 'base64-js';
-import { bytesToBase64, fileFor, type PdfDoc } from '../store/library';
+import { bytesToBase64, srcFile, type PdfDoc } from '../store/library';
 import { flattenAnnotations } from './annotations';
 
 export type ExportFormat = 'PDF' | 'PNG' | 'JPG' | 'Text';
@@ -29,7 +29,7 @@ export async function exportDoc(
   o: { format: ExportFormat; pages: number[]; includeAnnotations: boolean; compress: boolean },
   onProgress?: (msg: string) => void,
 ): Promise<string> {
-  const src = fileFor(doc.id);
+  const src = srcFile(doc);
   const all = o.pages.length === doc.pages;
   const anns = o.includeAnnotations ? doc.highlights : [];
   const dir = outDir();
@@ -42,7 +42,11 @@ export async function exportDoc(
   if (o.format === 'PDF') {
     onProgress?.('Preparing PDF…');
     let file = src;
-    if (anns.length || !all || o.compress) {
+    if (doc.external && !(anns.length || !all || o.compress)) {
+      // Files on the phone are shared via an app-owned copy.
+      file = new File(dir, `${safe(doc.name)}.pdf`);
+      src.copySync(file);
+    } else if (anns.length || !all || o.compress) {
       const bytes = await flattenAnnotations(await src.bytes(), anns, { pageNumbers: o.pages, objectStreams: o.compress });
       file = new File(dir, `${safe(doc.name)}.pdf`);
       file.writeSync(bytes);

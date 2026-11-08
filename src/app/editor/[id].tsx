@@ -8,7 +8,7 @@ import { AppText, Button, ColorSwatch, IconButton, InputField, StrokeSize } from
 import { useToast } from '../../components/Toast';
 import { flattenAnnotations, type Annotation } from '../../pdf/annotations';
 import { PdfView, type PdfViewHandle, type PdfViewMessage, type ToolState } from '../../pdf/PdfView';
-import { fileFor, useLibrary } from '../../store/library';
+import { useLibrary } from '../../store/library';
 import { useTheme } from '../../theme/ThemeProvider';
 import { annotation, radius, shadows } from '../../theme/tokens';
 
@@ -108,7 +108,7 @@ export default function Editor() {
     setDiscard(false);
     setSaving(true);
     try {
-      const bytes = await flattenAnnotations(await fileFor(doc.id).bytes(), anns);
+      const bytes = await flattenAnnotations(await lib.bytesOf(doc.id), anns);
       if (asCopy) {
         const copy = await lib.addFromBytes(bytes, `${doc.name} (edited)`, doc.source);
         toast('Saved as a copy');
@@ -189,7 +189,7 @@ export default function Editor() {
           <>
             <IconButton icon="undo" disabled={!canUndo} onPress={() => pdf.current?.undo()} label="Undo" />
             <IconButton icon="redo" disabled={!canRedo} onPress={() => pdf.current?.redo()} label="Redo" />
-            <Button size="small" label="Save" trailingIcon="chevron-down" disabled={saving} onPress={() => setMenu(true)} style={{ marginLeft: 4, marginRight: 8 }} />
+            <Button size="small" label="Save" trailingIcon="chevron-down" disabled={saving} onPress={() => setMenu(true)} />
           </>
         }
       />
@@ -221,16 +221,15 @@ export default function Editor() {
           borderTopWidth: 1,
           borderColor: c.borderSubtle,
           paddingTop: 12,
-          paddingBottom: Math.max(insets.bottom, 12),
           gap: 4,
           shadowColor: c.shadow,
           ...shadows.sheet,
         }}
       >
-        <View style={{ marginHorizontal: 12, minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 6, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderDefault, backgroundColor: c.bgSurface }}>
+        <View style={{ marginHorizontal: 12, minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 6, borderRadius: radius.lg, borderWidth: 1, borderColor: c.borderDefault, backgroundColor: c.bgSurface }}>
           {options}
         </View>
-        <View style={{ flexDirection: 'row', paddingHorizontal: 8 }}>
+        <View style={{ flexDirection: 'row', paddingHorizontal: 8, paddingTop: 4, paddingBottom: insets.bottom + 20 }}>
           {TOOLS.map((t) => (
             <ToolItem key={t.key} label={t.label} icon={t.icon} selected={tool === t.key} onPress={() => pickTool(t.key)} />
           ))}

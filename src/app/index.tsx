@@ -3,12 +3,13 @@ import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useMemo, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, FlatList, ScrollView, View, useWindowDimensions } from 'react-native';
 import { BottomNavBar, BottomSheet, FileCard, FileRow, ListItem, TopAppBar, type NavKey } from '../components/composites';
 import { Icon } from '../components/Icon';
 import { AppText, Button, Chip, Divider, FAB, IconButton, InputField } from '../components/primitives';
 import { useToast } from '../components/Toast';
-import { fileFor, formatDate, formatSize, pagesLabel, SOURCES, useLibrary, type PdfDoc, type Source } from '../store/library';
+import { formatDate, formatSize, pagesLabel, SOURCES, useLibrary, type PdfDoc, type Source } from '../store/library';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius } from '../theme/tokens';
 
@@ -25,6 +26,7 @@ export default function Home() {
   const lib = useLibrary();
   const toast = useToast();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<NavKey>('files');
   const [filter, setFilter] = useState<'All' | Source>('All');
   const [sort, setSort] = useState<Sort>('date');
@@ -35,6 +37,11 @@ export default function Home() {
   const [sheet, setSheet] = useState<null | 'actions' | 'rename' | 'delete' | 'info' | 'sort'>(null);
   const [target, setTarget] = useState<PdfDoc | null>(null);
   const [newName, setNewName] = useState('');
+  const [askAccess, setAskAccess] = useState(false);
+  const dismissAsk = () => {
+    setAskAccess(false);
+    AsyncStorage.setItem('askedDeviceAccess', '1');
+  };
 
   useEffect(() => {
     AsyncStorage.multiGet(['view', 'sort']).then((kv) => {
@@ -44,6 +51,14 @@ export default function Home() {
       if (s === 'date' || s === 'name' || s === 'size') setSort(s);
     });
   }, []);
+  useEffect(() => {
+    if (!lib.deviceSupported || lib.deviceAccess) return;
+    AsyncStorage.getItem('askedDeviceAccess').then((v) => {
+      if (!v) setAskAccess(true);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const saveView = (v: 'grid' | 'list') => {
     setView(v);
     AsyncStorage.setItem('view', v);
@@ -113,8 +128,24 @@ export default function Home() {
   const cardW = Math.floor((width - 40 - gap) / 2);
   const title = tab === 'files' ? 'My PDFs' : tab === 'recent' ? 'Recent' : 'Starred';
 
+  const accessCard = lib.deviceSupported && !lib.deviceAccess && (
+    <View style={{ marginHorizontal: 20, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: radius.md, borderWidth: 1, borderColor: c.borderSubtle, backgroundColor: c.bgSurface }}>
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="folder" size={20} color={c.iconSecondary} />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="labelLg">Show all PDFs on your phone</AppText>
+        <AppText variant="bodySm" color={c.textTertiary}>
+          Allow file access to list them here
+        </AppText>
+      </View>
+      <Button size="small" label="Allow" onPress={lib.requestDeviceAccess} />
+    </View>
+  );
+
   const header = (
     <View>
+      {accessCard}
       {searching ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <InputField
@@ -143,6 +174,7 @@ export default function Home() {
           </View>
         </View>
       )}
+      <View style={{ height: 8 }} />
     </View>
   );
 
@@ -195,9 +227,11 @@ export default function Home() {
           keyExtractor={(d) => d.id}
           ListHeaderComponent={header}
           ListEmptyComponent={lib.loaded ? empty : undefined}
-          columnWrapperStyle={{ gap, paddingHorizontal: 20 }}
-          contentContainerStyle={{ gap: 20, paddingBottom: 120 }}
+          columnWrapperStyle={{ gap, paddingHorizontal: 20, marginBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 140 }}
           keyboardShouldPersistTaps="handled"
+          refreshing={lib.scanning}
+          onRefresh={lib.deviceAccess ? lib.syncDevice : undefined}
           renderItem={({ item: d }) => (
             <FileCard name={d.name} meta={meta(d)} pages={pagesLabel(d.pages)} starred={d.starred} thumb={d.thumb} width={cardW} onPress={() => open(d)} onMore={() => more(d)} />
           )}
@@ -212,6 +246,8 @@ export default function Home() {
           contentContainerStyle={{ paddingBottom: 120 }}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           keyboardShouldPersistTaps="handled"
+          refreshing={lib.scanning}
+          onRefresh={lib.deviceAccess ? lib.syncDevice : undefined}
           renderItem={({ item: d }) => (
             <View style={{ paddingHorizontal: 20 }}>
               <FileRow name={d.name} meta={rowMeta(d)} starred={d.starred} thumb={d.thumb} onPress={() => open(d)} onMore={() => more(d)} />
@@ -220,7 +256,7 @@ export default function Home() {
         />
       )}
 
-      <FAB onPress={importFiles} style={{ position: 'absolute', right: 20, bottom: 112 }} />
+      <FAB onPress={importFiles} style={{ position: 'absolute', right: 20, bottom: insets.bottom + 85 + 16 }} />
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
         <BottomNavBar active={tab} onChange={setTab} />
       </View>
@@ -245,7 +281,7 @@ export default function Home() {
           <>
             <ListItem title="Open" icon="open" onPress={() => { setSheet(null); open(target); }} />
             <ListItem title="Edit PDF" icon="edit" onPress={() => { setSheet(null); router.push(`/editor/${target.id}`); }} />
-            <ListItem title="Share" icon="share" onPress={async () => { setSheet(null); await Sharing.shareAsync(fileFor(target.id).uri, { mimeType: 'application/pdf', dialogTitle: target.name }); }} />
+            <ListItem title="Share" icon="share" onPress={async () => { setSheet(null); await Sharing.shareAsync(lib.shareUri(target.id), { mimeType: 'application/pdf', dialogTitle: target.name }); }} />
             <ListItem
               title={target.starred ? 'Remove from starred' : 'Add to starred'}
               icon={target.starred ? 'star-filled' : 'star'}
@@ -272,11 +308,15 @@ export default function Home() {
               label="Rename"
               fill
               disabled={!!nameError}
-              onPress={() => {
+              onPress={async () => {
                 if (!target) return;
-                lib.rename(target.id, newName);
-                setSheet(null);
-                toast('Renamed');
+                try {
+                  await lib.rename(target.id, newName);
+                  setSheet(null);
+                  toast('Renamed');
+                } catch (e: any) {
+                  toast(e?.message ?? 'Could not rename this file');
+                }
               }}
             />
           </>
@@ -308,11 +348,15 @@ export default function Home() {
               label="Delete"
               kind="danger"
               fill
-              onPress={() => {
+              onPress={async () => {
                 if (!target) return;
-                lib.remove(target.id);
-                setSheet(null);
-                toast('PDF deleted');
+                try {
+                  await lib.remove(target.id);
+                  setSheet(null);
+                  toast('PDF deleted');
+                } catch (e: any) {
+                  toast(e?.message ?? 'Could not delete this file');
+                }
               }}
             />
           </>
@@ -331,6 +375,7 @@ export default function Home() {
             ['Size', formatSize(target.size)],
             ['Pages', String(target.pages)],
             ['Source', target.source],
+            ['Location', target.external ? target.external.path.replace(/^\/storage\/emulated\/0\//, '') : 'MyPDF View'],
             ['Added', new Date(target.addedAt).toLocaleString()],
             ['Modified', new Date(target.modifiedAt).toLocaleString()],
             ['Bookmarks', String(target.bookmarks.length)],
@@ -345,6 +390,23 @@ export default function Home() {
               </AppText>
             </View>
           ))}
+      </BottomSheet>
+
+      {/* First launch: ask to show the phone's PDFs */}
+      <BottomSheet
+        visible={askAccess}
+        onClose={dismissAsk}
+        title="See all your PDFs"
+        footer={
+          <>
+            <Button label="Not now" kind="outline" fill onPress={dismissAsk} />
+            <Button label="Allow access" fill onPress={() => { dismissAsk(); lib.requestDeviceAccess(); }} />
+          </>
+        }
+      >
+        <AppText variant="bodyMd" color={c.textSecondary} style={{ paddingHorizontal: 20 }}>
+          MyPDF View can list every PDF already on your phone — Downloads, WhatsApp, email attachments and more — so you don’t have to add them one by one. Turn on “Allow access to manage all files” on the next screen. Your files stay on your phone.
+        </AppText>
       </BottomSheet>
 
       {/* Sort */}
