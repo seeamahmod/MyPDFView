@@ -5,7 +5,7 @@ import { ActivityIndicator, BackHandler, Pressable, TextInput, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet, FormatOption, ListItem, PageThumbnail, ToolItem, TopAppBar } from '../../components/composites';
 import { Icon } from '../../components/Icon';
-import { AppText, Banner, Button, Chip, ColorSwatch, IconButton, InputField, PageIndicator, Toggle, ZoomControl } from '../../components/primitives';
+import { AppText, Banner, Button, Chip, ColorSwatch, FitButton, IconButton, InputField, PageIndicator, Toggle, ZoomControl } from '../../components/primitives';
 import { useToast } from '../../components/Toast';
 import type { Annotation } from '../../pdf/annotations';
 import { exportDoc, type ExportFormat } from '../../pdf/exportDoc';
@@ -267,7 +267,10 @@ export default function Viewer() {
       <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 12, alignItems: 'center' }}>
         <View pointerEvents="box-none" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', alignSelf: 'stretch' }}>
           <PageIndicator label={`${page} / ${doc.pages}`} />
-          <ZoomControl value={zoom} onIn={() => pdf.current?.zoom(1)} onOut={() => pdf.current?.zoom(-1)} onFit={() => pdf.current?.fitWidth()} />
+          <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {Math.abs(zoom - 1) > 0.005 && <FitButton onPress={() => pdf.current?.fitWidth()} />}
+            <ZoomControl value={zoom} onIn={() => pdf.current?.zoom(1)} onOut={() => pdf.current?.zoom(-1)} />
+          </View>
         </View>
         {mode === 'highlight' ? (
           <View style={{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 4, padding: 8, borderRadius: radius.lg, backgroundColor: c.bgSurfaceRaised, shadowColor: c.shadow, ...shadows.md }}>

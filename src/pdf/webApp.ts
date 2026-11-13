@@ -276,6 +276,22 @@ export const WEB_APP_JS = String.raw`
     }
   }, { passive: true });
 
+  /* ---------- Double-tap: fit <-> zoom ---------- */
+  var tap = null, lastTap = null;
+  document.addEventListener('touchstart', function (e) {
+    tap = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), moved: false } : null;
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (tap && (Math.abs(e.touches[0].clientX - tap.x) > 10 || Math.abs(e.touches[0].clientY - tap.y) > 10)) tap.moved = true;
+  }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (!tap || tap.moved || S.mode !== 'viewer' || !S.pages.length || Date.now() - tap.t > 250) { lastTap = null; return; }
+    if (lastTap && tap.t - lastTap.t < 320 && Math.abs(tap.x - lastTap.x) < 40 && Math.abs(tap.y - lastTap.y) < 40) {
+      lastTap = null;
+      setScale(Math.abs(S.scale - S.fit) < 0.01 ? S.fit * 2 : S.fit, { x: tap.x, y: tap.y });
+    } else lastTap = tap;
+  }, { passive: true });
+
   /* ---------- Annotations ---------- */
   function hexToRgba(hex, a) {
     var n = parseInt(hex.slice(1), 16);

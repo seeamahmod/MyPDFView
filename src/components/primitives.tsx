@@ -426,31 +426,54 @@ export function FAB({ icon = 'plus', onPress, style }: { icon?: IconName; onPres
 export function PageIndicator({ label }: { label: string }) {
   const { c } = useTheme();
   return (
-    <View style={{ backgroundColor: c.bgInverse, opacity: 0.9, borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 6 }}>
-      <AppText variant="labelMd" color={c.textInverse}>
+    <View style={{ height: 44, justifyContent: 'center', backgroundColor: c.bgSurfaceRaised, borderRadius: radius.full, paddingHorizontal: 16, shadowColor: c.shadow, ...shadows.md }}>
+      <AppText variant="labelMd" color={c.textPrimary}>
         {label}
       </AppText>
     </View>
   );
 }
 
-export function ZoomControl({ value, onIn, onOut, onFit }: { value: number; onIn: () => void; onOut: () => void; onFit?: () => void }) {
+export function ZoomControl({ value, onIn, onOut }: { value: number; onIn: () => void; onOut: () => void }) {
   const { c } = useTheme();
-  const fitted = Math.abs(value - 1) < 0.005;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, padding: 2, borderRadius: radius.full, backgroundColor: c.bgSurfaceRaised, shadowColor: c.shadow, ...shadows.md }}>
+    <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', gap: 2, padding: 2, borderRadius: radius.full, backgroundColor: c.bgSurfaceRaised, shadowColor: c.shadow, ...shadows.md }}>
       <IconButton icon="minus" onPress={onOut} label="Zoom out" />
-      <AppText variant="labelMd" style={{ width: 40, textAlign: 'center' }}>
+      <AppText variant="labelMd" style={{ width: 44, textAlign: 'center' }}>
         {Math.round(value * 100)}%
       </AppText>
       <IconButton icon="plus" onPress={onIn} label="Zoom in" />
-      {onFit && (
-        <>
-          <View style={{ width: 1, height: 20, backgroundColor: c.borderSubtle }} />
-          <IconButton icon="fit-width" onPress={onFit} disabled={fitted} label="Fit to screen" />
-        </>
-      )}
     </View>
+  );
+}
+
+/** Appears only while zoomed; one tap returns the page to screen width. */
+export function FitButton({ onPress }: { onPress: () => void }) {
+  const { c } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Fit to screen"
+      onPress={onPress}
+      hitSlop={4}
+      style={({ pressed }) => ({
+        height: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingLeft: 12,
+        paddingRight: 16,
+        borderRadius: radius.full,
+        backgroundColor: pressed ? c.bgBrandPressed : c.bgBrand,
+        shadowColor: c.shadow,
+        ...shadows.md,
+      })}
+    >
+      <Icon name="fit-width" size={20} color={c.iconOnBrand} />
+      <AppText variant="labelLg" color={c.textOnBrand}>
+        Fit
+      </AppText>
+    </Pressable>
   );
 }
 

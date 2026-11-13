@@ -75,7 +75,8 @@
           ]
         }
       ],
-      "./plugins/withCustomNinja"
+      "./plugins/withCustomNinja",
+      "./plugins/withSmallApk"
     ],
     "experiments": {
       "typedRoutes": false
