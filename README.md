@@ -64,3 +64,7 @@ Replace the files in `assets/` (`icon.png`, `android-icon-foreground.png`, `andr
 
 - **Edit** works by covering the original line and drawing the new text on top (true in-place PDF text editing isn't possible in general). Text saved into PDFs uses Helvetica, so characters outside Latin-1 are replaced with `?`.
 - **Word export** is shown as "Coming soon".
+
+## License
+
+Released under the MIT License. Copyright (c) 2026 Seeam Ahmod. You may reuse this code, but keep the copyright notice and credit the author.
