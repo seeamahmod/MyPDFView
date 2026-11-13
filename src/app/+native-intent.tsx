@@ -1,4 +1,4 @@
-// Routes "Open with → MyPDF View" (content:// or file:// PDFs) and files shared
+// Routes "Open with → PDFly Reader" (content:// or file:// PDFs) and files shared
 // to the app into the /incoming screen, which imports them.
 export function redirectSystemPath({ path }: { path: string; initial: boolean }) {
   try {

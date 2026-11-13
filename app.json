@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MyPDF View",
+    "name": "PDFly Reader",
     "slug": "mypdfview",
     "scheme": "mypdfview",
     "version": "1.0.0",
@@ -68,8 +68,8 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow MyPDF View to save exported pages to your gallery.",
-          "savePhotosPermission": "Allow MyPDF View to save exported pages to your gallery.",
+          "photosPermission": "Allow PDFly Reader to save exported pages to your gallery.",
+          "savePhotosPermission": "Allow PDFly Reader to save exported pages to your gallery.",
           "granularPermissions": [
             "photo"
           ]

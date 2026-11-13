@@ -129,7 +129,7 @@ class DevicePdfsModule : Module() {
     }
 
   private fun requireAccess() {
-    if (!hasAccess()) throw CodedException("ERR_NO_ACCESS", "MyPDF View needs All files access to change files on your phone", null)
+    if (!hasAccess()) throw CodedException("ERR_NO_ACCESS", "PDFly Reader needs All files access to change files on your phone", null)
   }
 
   private fun rescan(path: String) {

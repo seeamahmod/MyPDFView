@@ -375,7 +375,7 @@ export default function Home() {
             ['Size', formatSize(target.size)],
             ['Pages', String(target.pages)],
             ['Source', target.source],
-            ['Location', target.external ? target.external.path.replace(/^\/storage\/emulated\/0\//, '') : 'MyPDF View'],
+            ['Location', target.external ? target.external.path.replace(/^\/storage\/emulated\/0\//, '') : 'PDFly Reader'],
             ['Added', new Date(target.addedAt).toLocaleString()],
             ['Modified', new Date(target.modifiedAt).toLocaleString()],
             ['Bookmarks', String(target.bookmarks.length)],
@@ -405,7 +405,7 @@ export default function Home() {
         }
       >
         <AppText variant="bodyMd" color={c.textSecondary} style={{ paddingHorizontal: 20 }}>
-          MyPDF View can list every PDF already on your phone — Downloads, WhatsApp, email attachments and more — so you don’t have to add them one by one. Turn on “Allow access to manage all files” on the next screen. Your files stay on your phone.
+          PDFly Reader can list every PDF already on your phone — Downloads, WhatsApp, email attachments and more — so you don’t have to add them one by one. Turn on “Allow access to manage all files” on the next screen. Your files stay on your phone.
         </AppText>
       </BottomSheet>
 

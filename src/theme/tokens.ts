@@ -1,4 +1,4 @@
-// Design tokens mirrored from the Figma "MyPDF View" design system.
+// Design tokens for PDFly Reader, mirrored from the Figma design system.
 // Primitives → semantic colors (Light / Dark), spacing, radius, size, type.
 
 export const primitives = {

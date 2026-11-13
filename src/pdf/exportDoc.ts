@@ -92,10 +92,10 @@ export async function exportDoc(
     return 'Gallery access denied — shared page 1 only';
   }
   onProgress?.('Saving to Gallery…');
-  let album = await Album.get('MyPDF View');
+  let album = await Album.get('PDFly Reader');
   for (const f of files) {
     const asset = await Asset.create(f.uri, album ?? undefined);
-    if (!album) album = await Album.create('MyPDF View', [asset], false);
+    if (!album) album = await Album.create('PDFly Reader', [asset], false);
   }
-  return `${files.length} images saved to Gallery › MyPDF View`;
+  return `${files.length} images saved to Gallery › PDFly Reader`;
 }

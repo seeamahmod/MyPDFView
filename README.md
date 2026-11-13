@@ -1,6 +1,6 @@
-# MyPDF View
+# PDFly Reader
 
-A PDF reader and editor for Android, built with React Native (Expo SDK 58) from the **MyPDF View** Figma design system.
+A PDF reader and editor for Android, built with React Native (Expo SDK 58) from its Figma design system.
 
 ## Features
 
@@ -10,7 +10,7 @@ A PDF reader and editor for Android, built with React Native (Expo SDK 58) from 
 - **Viewer**: smooth page rendering (pdf.js, fully offline), pinch-zoom and zoom controls, page indicator, search inside the document, bookmarks, go to page, fit to width, night reading, page thumbnails, and resuming on the last page you read.
 - **Highlight mode**: tap any line of text to highlight it in one of five colors (tap again to remove), with undo/redo.
 - **Editor**: Edit (retype a line of text), Text (add text boxes with color, bold, italic and size), Draw (6 inks × 3 stroke sizes), Shapes (rectangle, ellipse, line, arrow) and Erase (tap to erase, or clear all), with undo/redo. **Save** writes changes into the PDF; **Save as copy** keeps the original.
-- **Export**: PDF (with or without highlights, page ranges, optional compression), PNG or JPG per page (a single page is shared; multiple pages are saved to Gallery › MyPDF View), and plain text.
+- **Export**: PDF (with or without highlights, page ranges, optional compression), PNG or JPG per page (a single page is shared; multiple pages are saved to Gallery › PDFly Reader), and plain text.
 - **Android integration**: appears in "Open with" for PDFs, and accepts PDFs shared from other apps.
 - **Light and dark themes**, using the design tokens from Figma (charcoal `#2A2A2A` brand on a ghost-white canvas).
 
