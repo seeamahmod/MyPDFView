@@ -267,7 +267,7 @@ export default function Viewer() {
       <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 12, alignItems: 'center' }}>
         <View pointerEvents="box-none" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', alignSelf: 'stretch' }}>
           <PageIndicator label={`${page} / ${doc.pages}`} />
-          <ZoomControl value={zoom} onIn={() => pdf.current?.zoom(1)} onOut={() => pdf.current?.zoom(-1)} />
+          <ZoomControl value={zoom} onIn={() => pdf.current?.zoom(1)} onOut={() => pdf.current?.zoom(-1)} onFit={() => pdf.current?.fitWidth()} />
         </View>
         {mode === 'highlight' ? (
           <View style={{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 4, padding: 8, borderRadius: radius.lg, backgroundColor: c.bgSurfaceRaised, shadowColor: c.shadow, ...shadows.md }}>

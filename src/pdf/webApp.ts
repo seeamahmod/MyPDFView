@@ -122,6 +122,9 @@ export const WEB_APP_JS = String.raw`
   async function openViewer(m) {
     S.mode = m.mode || 'viewer'; S.night = !!m.night; S.bg = m.bg || S.bg;
     S.padTop = m.padTop || 12; S.padBottom = m.padBottom || 200;
+    // Paint the whole canvas, not just <body>: when zoomed out the pages are
+    // shorter than the screen and <html> would show through below them.
+    document.documentElement.style.background = S.bg;
     document.body.style.background = S.bg;
     document.body.classList.toggle('night', S.night);
     S.pdf = await openPdf(m.data);

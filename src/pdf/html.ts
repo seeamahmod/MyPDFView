@@ -6,6 +6,7 @@ const esc = (s: string) => JSON.stringify(s).replace(/<\/(script)/gi, '<\\/$1');
 const CSS = `
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;background:#F8F8FF;overscroll-behavior:none}
+html,body{min-height:100%}
 body{-webkit-user-select:none;user-select:none}
 #pages{width:max-content;min-width:100%;padding:12px 12px 200px;transform-origin:0 0}
 .page{position:relative;margin:0 auto 16px;background:#fff;box-shadow:0 1px 3px rgba(13,13,20,.14),0 0 0 1px rgba(13,13,20,.04);border-radius:2px;overflow:hidden}

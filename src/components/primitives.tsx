@@ -434,8 +434,9 @@ export function PageIndicator({ label }: { label: string }) {
   );
 }
 
-export function ZoomControl({ value, onIn, onOut }: { value: number; onIn: () => void; onOut: () => void }) {
+export function ZoomControl({ value, onIn, onOut, onFit }: { value: number; onIn: () => void; onOut: () => void; onFit?: () => void }) {
   const { c } = useTheme();
+  const fitted = Math.abs(value - 1) < 0.005;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, padding: 2, borderRadius: radius.full, backgroundColor: c.bgSurfaceRaised, shadowColor: c.shadow, ...shadows.md }}>
       <IconButton icon="minus" onPress={onOut} label="Zoom out" />
@@ -443,6 +444,12 @@ export function ZoomControl({ value, onIn, onOut }: { value: number; onIn: () =>
         {Math.round(value * 100)}%
       </AppText>
       <IconButton icon="plus" onPress={onIn} label="Zoom in" />
+      {onFit && (
+        <>
+          <View style={{ width: 1, height: 20, backgroundColor: c.borderSubtle }} />
+          <IconButton icon="fit-width" onPress={onFit} disabled={fitted} label="Fit to screen" />
+        </>
+      )}
     </View>
   );
 }
